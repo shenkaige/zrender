@@ -222,6 +222,8 @@ export function brushSVGPath(el: Path, scope: BrushScope) {
         attrs.d = svgPathBuilder.getStr();
     }
 
+    // Apply clip-rule from clipPath's style    
+    el.style.clipRule && (attrs['clip-rule'] = el.style.clipRule);
     setTransform(attrs, el.transform);
     setStyleAttrs(attrs, style, el, scope);
     setMetaData(attrs, el);
@@ -382,7 +384,7 @@ function setShadow(
             const offsetX = style.shadowOffsetX || 0;
             const offsetY = style.shadowOffsetY || 0;
             const blur = style.shadowBlur;
-            const {opacity, color} = normalizeColor(style.shadowColor);
+            const { opacity, color } = normalizeColor(style.shadowColor);
             const stdDx = blur / 2 / scaleX;
             const stdDy = blur / 2 / scaleY;
             const stdDeviation = stdDx + ' ' + stdDy;
@@ -454,7 +456,7 @@ export function setGradient(
 
         const stopColor = colors[i].color;
         // Fix Safari bug that stop-color not recognizing alpha #9014
-        const {color, opacity} = normalizeColor(stopColor);
+        const { color, opacity } = normalizeColor(stopColor);
 
         const stopsAttrs: SVGVNodeAttrs = {
             'offset': offset
@@ -643,17 +645,28 @@ export function setClipPath(
     attrs: SVGVNodeAttrs,
     scope: BrushScope
 ) {
-    const {clipPathCache, defs} = scope;
+    const { clipPathCache, defs } = scope;
     let clipPathId = clipPathCache[clipPath.id];
+
+    const pathVersion = clipPath.path.getVersion();
+    const preAttrs = defs[clipPathId]?.attrs;
+
     if (!clipPathId) {
         clipPathId = scope.zrId + '-c' + scope.clipPathIdx++;
         const clipPathAttrs: SVGVNodeAttrs = {
-            id: clipPathId
+            id: clipPathId,
+            pathVersion: pathVersion
         };
 
         clipPathCache[clipPath.id] = clipPathId;
         defs[clipPathId] = createVNode(
             'clipPath', clipPathId, clipPathAttrs,
+            [brushSVGPath(clipPath, scope)]
+        );
+    } else if (pathVersion != preAttrs?.pathVersion) {
+        preAttrs.pathVersion = pathVersion;
+        defs[clipPathId] = createVNode(
+            'clipPath', clipPathId, preAttrs,
             [brushSVGPath(clipPath, scope)]
         );
     }

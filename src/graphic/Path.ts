@@ -53,6 +53,8 @@ export interface PathStyleProps extends CommonStyleProps {
      * https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/paint-order
      */
     strokeFirst?: boolean
+    // Add clipRule property for SVG clip rule support
+    clipRule?: 'evenodd' | 'nonzero'
 }
 
 export const DEFAULT_PATH_STYLE: PathStyleProps = defaults({
